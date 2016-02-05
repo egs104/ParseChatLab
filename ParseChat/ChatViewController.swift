@@ -7,13 +7,53 @@
 //
 
 import UIKit
+import Parse
 
-class ChatViewController: UIViewController {
+class ChatViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
+    @IBOutlet weak var messageTextField: UITextField!
+    @IBOutlet weak var tableView: UITableView!
+    
+    var messageArray = [String]()
+    var usernameArray = [PFUser]()
+    
+    func onTimer() {
+        // Add code to be run periodically
+        
+        var query = PFQuery(className:"Message")
+        query.orderByDescending("createdAt")
+        query.findObjectsInBackgroundWithBlock {
+            (objects: [PFObject]?, error: NSError?) -> Void in
+            
+            if error == nil {
+                // The find succeeded.
+                print("Successfully retrieved \(objects!.count) messages.")
+                // Do something with the found objects
+                if let objects = objects {
+                    for object in objects {
+                        print(object["text"])
+                        self.messageArray.append(object["text"] as! String)
+                        //self.usernameArray.append(object["user"] as! PFUser)
+                    }
+                    self.tableView.reloadData()
+                }
+            } else {
+                // Log details of the failure
+                print("Error: \(error!) \(error!.userInfo)")
+            }
+        }
+        
+    }
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        NSTimer.scheduledTimerWithTimeInterval(5, target: self, selector: "onTimer", userInfo: nil, repeats: true)
+        
+        onTimer()
+        
+        tableView.delegate = self
+        tableView.dataSource = self
     }
 
     override func didReceiveMemoryWarning() {
@@ -21,15 +61,38 @@ class ChatViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+    @IBAction func saveMessage(sender: AnyObject) {
+        
+        var message = PFObject(className:"Message")
+        message["text"] = messageTextField.text
+        message["user"] = PFUser.currentUser()
+                message.saveInBackgroundWithBlock {
+            (success: Bool, error: NSError?) -> Void in
+            if (success) {
+                // The object has been saved.
+                print(message)
+            } else {
+                // There was a problem, check error.description
+                print(error)
+            }
+        }
+        
     }
-    */
+
+    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        
+        return messageArray.count
+    }
+    
+    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier("ChatCell", forIndexPath: indexPath) as! ChatCell
+        
+        //var userOfMessage = usernameArray[indexPath.row]
+        
+        cell.messageLabel.text = messageArray[indexPath.row]
+        //cell.usernameLabel.text = userOfMessage.username
+        
+        return cell
+    }
 
 }
