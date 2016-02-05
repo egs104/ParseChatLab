@@ -15,13 +15,14 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
     @IBOutlet weak var tableView: UITableView!
     
     var messageArray = [String]()
-    var usernameArray = [PFUser]()
+    var usernameArray = [String]()
     
     func onTimer() {
         // Add code to be run periodically
         
         var query = PFQuery(className:"Message")
         query.orderByDescending("createdAt")
+        //query.includeKey("user")
         query.findObjectsInBackgroundWithBlock {
             (objects: [PFObject]?, error: NSError?) -> Void in
             
@@ -33,7 +34,7 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
                     for object in objects {
                         print(object["text"])
                         self.messageArray.append(object["text"] as! String)
-                        //self.usernameArray.append(object["user"] as! PFUser)
+                        //self.usernameArray.append(object["user"].username!! as String)
                     }
                     self.tableView.reloadData()
                 }
@@ -65,7 +66,7 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
         
         var message = PFObject(className:"Message")
         message["text"] = messageTextField.text
-        message["user"] = PFUser.currentUser()
+        //message["user"] = PFUser.currentUser()
                 message.saveInBackgroundWithBlock {
             (success: Bool, error: NSError?) -> Void in
             if (success) {
@@ -87,10 +88,8 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("ChatCell", forIndexPath: indexPath) as! ChatCell
         
-        //var userOfMessage = usernameArray[indexPath.row]
-        
         cell.messageLabel.text = messageArray[indexPath.row]
-        //cell.usernameLabel.text = userOfMessage.username
+        //cell.usernameLabel.text = usernameArray[indexPath.row]
         
         return cell
     }
