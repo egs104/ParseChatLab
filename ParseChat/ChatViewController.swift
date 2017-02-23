@@ -21,26 +21,46 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
         // Add code to be run periodically
         
         var query = PFQuery(className:"Message")
-        query.orderByDescending("createdAt")
-        //query.includeKey("user")
-        query.findObjectsInBackgroundWithBlock {
-            (objects: [PFObject]?, error: NSError?) -> Void in
+        query.order(byDescending: "createdAt")
+        query.includeKey("user")
+        query.findObjectsInBackground {
+            (objects: [PFObject]?, error: Error?) -> Void in
             
             if error == nil {
                 // The find succeeded.
                 print("Successfully retrieved \(objects!.count) messages.")
+//                self.usernameArray = [String]()
+//                self.messageArray = [String]()
                 // Do something with the found objects
                 if let objects = objects {
                     for object in objects {
-                        print(object["text"])
-                        self.messageArray.append(object["text"] as! String)
-                        //self.usernameArray.append(object["user"].username!! as String)
+                        //print(object)
+                        print(self.usernameArray)
+                        print(self.messageArray)
+                        
+                        let messageText = object["text"] as? String
+                        
+                        if let messageText = messageText {
+                            self.messageArray.append(object["text"] as! String)
+                        } else {
+                            self.messageArray.append(" ")
+                        }
+                        
+                        var messageAuthor = object["user"]
+                        
+                        if let messageAuthor = messageAuthor {
+                            self.usernameArray.append((object["user"] as AnyObject).username!! as String)
+                        } else {
+                            self.usernameArray.append(("anonymous"))
+                        }
+                        
                     }
                     self.tableView.reloadData()
+                    
                 }
             } else {
                 // Log details of the failure
-                print("Error: \(error!) \(error!.userInfo)")
+                print("Error: \(error!) \(error!.localizedDescription)")
             }
         }
         
@@ -49,7 +69,7 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        NSTimer.scheduledTimerWithTimeInterval(5, target: self, selector: "onTimer", userInfo: nil, repeats: true)
+        Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(ChatViewController.onTimer), userInfo: nil, repeats: true)
         
         onTimer()
         
@@ -62,13 +82,13 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
         // Dispose of any resources that can be recreated.
     }
     
-    @IBAction func saveMessage(sender: AnyObject) {
+    @IBAction func saveMessage(_ sender: AnyObject) {
         
         var message = PFObject(className:"Message")
         message["text"] = messageTextField.text
-        //message["user"] = PFUser.currentUser()
-                message.saveInBackgroundWithBlock {
-            (success: Bool, error: NSError?) -> Void in
+        message["user"] = PFUser.current()
+                message.saveInBackground {
+            (success: Bool, error: Error?) -> Void in
             if (success) {
                 // The object has been saved.
                 print(message)
@@ -80,16 +100,20 @@ class ChatViewController: UIViewController, UITableViewDelegate, UITableViewData
         
     }
 
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return messageArray.count
+        if messageArray != nil {
+            return messageArray.count
+        } else {
+            return 0
+        }
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("ChatCell", forIndexPath: indexPath) as! ChatCell
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath) as! ChatCell
         
         cell.messageLabel.text = messageArray[indexPath.row]
-        //cell.usernameLabel.text = usernameArray[indexPath.row]
+        cell.usernameLabel.text = usernameArray[indexPath.row]
         
         return cell
     }

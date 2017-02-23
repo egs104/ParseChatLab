@@ -16,14 +16,14 @@ class LoginViewController: UIViewController {
     
     var activityIndicator: UIActivityIndicatorView = UIActivityIndicatorView()
     
-    func displayAlert(title: String, message: String) {
+    func displayAlert(_ title: String, message: String) {
         
-        var alert = UIAlertController(title: title, message: message, preferredStyle: UIAlertControllerStyle.Alert)
-        alert.addAction((UIAlertAction(title: "OK", style: .Default, handler: { (action) -> Void in
-            self.dismissViewControllerAnimated(true, completion: nil)
+        let alert = UIAlertController(title: title, message: message, preferredStyle: UIAlertControllerStyle.alert)
+        alert.addAction((UIAlertAction(title: "OK", style: .default, handler: { (action) -> Void in
+            self.dismiss(animated: true, completion: nil)
         })))
         
-        self.presentViewController(alert, animated: true, completion: nil)
+        self.present(alert, animated: true, completion: nil)
         
     }
 
@@ -31,7 +31,7 @@ class LoginViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        var tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: "DismissKeyboard")
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(LoginViewController.DismissKeyboard))
         view.addGestureRecognizer(tap)
     }
 
@@ -45,47 +45,46 @@ class LoginViewController: UIViewController {
         view.endEditing(true)
     }
 
-    @IBAction func signUp(sender: AnyObject) {
+    @IBAction func signUp(_ sender: AnyObject) {
     
-            var user = PFUser()
-            user.username = emailTextField.text
-            user.password = passwordTextField.text
-            user.email = emailTextField.text
-            
-            user.signUpInBackgroundWithBlock {
-                (succeeded: Bool, error: NSError?) -> Void in
-                if let error = error {
-                    let errorString = error.userInfo["error"] as? NSString
-                    // Show the errorString somewhere and let the user try again.
-                    
-                    self.displayAlert("Login Failed", message: (errorString as? String)!)
-                    
-                } else {
-                    // Hooray! Let them use the app now.
-                    
-                    self.performSegueWithIdentifier("successfulLogin", sender: self)
-                }
+        var user = PFUser()
+        user.username = emailTextField.text
+        user.password = passwordTextField.text
+        user.email = emailTextField.text
+        
+        user.signUpInBackground(block: { (succeeded: Bool, error: Error?) -> Void in
+            if let error = error {
+                let errorString = error.localizedDescription as? NSString
+                // Show the errorString somewhere and let the user try again.
+                
+                self.displayAlert("Login Failed", message: (errorString as? String)!)
+                
+            } else {
+                // Hooray! Let them use the app now.
+                
+                self.performSegue(withIdentifier: "successfulLogin", sender: self)
             }
+        })
     }
     
-    @IBAction func login(sender: AnyObject) {
+    @IBAction func login(_ sender: AnyObject) {
         
         var errorMessage = "Please try again later"
         
-        PFUser.logInWithUsernameInBackground(emailTextField.text!, password: passwordTextField.text!) {
-            (user: PFUser?, error: NSError?) -> Void in
+        PFUser.logInWithUsername(inBackground: emailTextField.text!, password: passwordTextField.text!) {
+            (user: PFUser?, error: Error?) -> Void in
             
 //            self.activityIndicator.stopAnimating()
 //            UIApplication.sharedApplication().endIgnoringInteractionEvents()
             
             if user != nil {
                 // Do stuff after successful login.
-                self.performSegueWithIdentifier("successfulLogin", sender: self)
+                self.performSegue(withIdentifier: "successfulLogin", sender: self)
                 
             } else {
                 // The login failed. Check error to see why.
                 
-                if let errorString = error!.userInfo["error"] as? String {
+                if let errorString = error!.localizedDescription as? String {
                     
                     errorMessage = errorString
                     
